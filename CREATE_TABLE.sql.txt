@@ -1,0 +1,152 @@
+-- Eliminación limpia si se vuelve a correr el script
+DROP TABLE IF EXISTS patrocinio CASCADE;
+DROP TABLE IF EXISTS empresa CASCADE;
+DROP TABLE IF EXISTS ponente_sesion CASCADE;
+DROP TABLE IF EXISTS inscripcion_sesion CASCADE;
+DROP TABLE IF EXISTS taller CASCADE;
+DROP TABLE IF EXISTS charla CASCADE;
+DROP TABLE IF EXISTS sesion CASCADE;
+DROP TABLE IF EXISTS ponente CASCADE;
+DROP TABLE IF EXISTS asistente CASCADE;
+DROP TABLE IF EXISTS persona_edicion CASCADE;
+DROP TABLE IF EXISTS persona CASCADE;
+DROP TABLE IF EXISTS edicion CASCADE;
+DROP TABLE IF EXISTS sala CASCADE;
+DROP TABLE IF EXISTS sede CASCADE;
+
+-- 1. SEDE
+CREATE TABLE sede (
+    id_sede INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    ciudad VARCHAR(100) NOT NULL,
+    direccion VARCHAR(200) NOT NULL
+);
+
+-- 2. SALA
+CREATE TABLE sala (
+    id_sala INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_sede INT NOT NULL REFERENCES sede(id_sede) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    capacidad INT NOT NULL CHECK (capacidad > 0)
+);
+
+-- 3. EDICION
+CREATE TABLE edicion (
+    id_edicion INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    anio INT NOT NULL CHECK (anio >= 2020),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    estado_preparacion VARCHAR(20) NOT NULL DEFAULT 'Planificación' 
+        CHECK (estado_preparacion IN ('Planificación', 'Confirmado', 'En Curso', 'Finalizado')),
+    modalidad VARCHAR(15) NOT NULL 
+        CHECK (modalidad IN ('Presencial', 'Virtual', 'Híbrida')),
+    CONSTRAINT chk_edicion_fechas CHECK (fecha_fin >= fecha_inicio)
+);
+
+-- 4. PERSONA
+CREATE TABLE persona (
+    id_persona INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    correo VARCHAR(150) NOT NULL UNIQUE,
+    pais VARCHAR(100) NOT NULL
+);
+
+-- 5. PERSONA_EDICION (Supertipo de Roles)
+CREATE TABLE persona_edicion (
+    id_persona_edicion INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_persona INT NOT NULL REFERENCES persona(id_persona) ON DELETE CASCADE,
+    id_edicion INT NOT NULL REFERENCES edicion(id_edicion) ON DELETE CASCADE,
+    es_asistente BOOLEAN NOT NULL DEFAULT FALSE,
+    es_ponente BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT uq_persona_edicion UNIQUE (id_persona, id_edicion),
+    CONSTRAINT chk_al_menos_un_rol CHECK (es_asistente = TRUE OR es_ponente = TRUE)
+);
+
+-- 6. ASISTENTE
+CREATE TABLE asistente (
+    id_persona_edicion INT PRIMARY KEY REFERENCES persona_edicion(id_persona_edicion) ON DELETE CASCADE,
+    tipo_acreditacion VARCHAR(20) NOT NULL CHECK (tipo_acreditacion IN ('Estudiante', 'Profesional', 'VIP'))
+);
+
+-- 7. PONENTE
+CREATE TABLE ponente (
+    id_persona_edicion INT PRIMARY KEY REFERENCES persona_edicion(id_persona_edicion) ON DELETE CASCADE,
+    biografia TEXT NOT NULL
+);
+
+-- 8. SESION (Supertipo y Autorreferencial)
+CREATE TABLE sesion (
+    id_sesion INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_edicion INT NOT NULL REFERENCES edicion(id_edicion) ON DELETE CASCADE,
+    id_sala INT REFERENCES sala(id_sala) ON DELETE SET NULL,
+    id_sesion_prerrequisito INT REFERENCES sesion(id_sesion) ON DELETE SET NULL,
+    titulo VARCHAR(200) NOT NULL,
+    resumen TEXT NOT NULL,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    tipo_sesion VARCHAR(10) NOT NULL CHECK (tipo_sesion IN ('Charla', 'Taller')),
+    url_transmision VARCHAR(255),
+    CONSTRAINT chk_sesion_horas CHECK (hora_fin > hora_inicio),
+    CONSTRAINT chk_no_autorerrequisito CHECK (id_sesion_prerrequisito <> id_sesion)
+);
+
+-- 9. CHARLA
+CREATE TABLE charla (
+    id_sesion INT PRIMARY KEY REFERENCES sesion(id_sesion) ON DELETE CASCADE,
+    minutos_preguntas INT NOT NULL CHECK (minutos_preguntas >= 0)
+);
+
+-- 10. TALLER
+CREATE TABLE taller (
+    id_sesion INT PRIMARY KEY REFERENCES sesion(id_sesion) ON DELETE CASCADE,
+    cupo_practico INT NOT NULL CHECK (cupo_practico > 0),
+    requisitos_materiales TEXT NOT NULL
+);
+
+-- 11. INSCRIPCION_SESION
+CREATE TABLE inscripcion_sesion (
+    id_inscripcion INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_asistente INT NOT NULL REFERENCES asistente(id_persona_edicion) ON DELETE CASCADE,
+    id_sesion INT NOT NULL REFERENCES sesion(id_sesion) ON DELETE CASCADE,
+    fecha_inscripcion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(15) NOT NULL DEFAULT 'Confirmada' 
+        CHECK (estado IN ('Reservada', 'Cancelada', 'Confirmada')),
+    asistio BOOLEAN,
+    CONSTRAINT uq_asistente_sesion UNIQUE (id_asistente, id_sesion)
+);
+
+-- 12. PONENTE_SESION
+CREATE TABLE ponente_sesion (
+    id_ponente INT NOT NULL REFERENCES ponente(id_persona_edicion) ON DELETE CASCADE,
+    id_sesion INT NOT NULL REFERENCES sesion(id_sesion) ON DELETE CASCADE,
+    rol_ponente VARCHAR(30) NOT NULL DEFAULT 'Principal' 
+        CHECK (rol_ponente IN ('Principal', 'Co-presentador', 'Moderador')),
+    orden_presentacion INT NOT NULL CHECK (orden_presentacion > 0),
+    PRIMARY KEY (id_ponente, id_sesion)
+);
+
+-- 13. EMPRESA
+CREATE TABLE empresa (
+    id_empresa INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    identificacion_fiscal VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- 14. PATROCINIO
+CREATE TABLE patrocinio (
+    id_patrocinio INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_empresa INT NOT NULL REFERENCES empresa(id_empresa) ON DELETE CASCADE,
+    id_edicion INT NOT NULL REFERENCES edicion(id_edicion) ON DELETE CASCADE,
+    categoria VARCHAR(15) NOT NULL CHECK (categoria IN ('Platinum', 'Gold', 'Silver')),
+    monto NUMERIC(12,2) NOT NULL CHECK (monto > 0),
+    fecha_confirmacion DATE NOT NULL,
+    estado_acuerdo VARCHAR(15) NOT NULL DEFAULT 'Vigente' 
+        CHECK (estado_acuerdo IN ('Vigente', 'Cancelado', 'Finalizado'))
+);
+
+-- Regla de negocio: Un solo patrocinio 'Vigente' por empresa y edición
+CREATE UNIQUE INDEX uq_patrocinio_vigente 
+ON patrocinio (id_empresa, id_edicion) 
+WHERE estado_acuerdo = 'Vigente';

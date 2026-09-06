@@ -1,0 +1,22 @@
+-- Verificación A: Listar sesiones con sus ponentes y modalidad de edición
+SELECT 
+    e.nombre AS edicion,
+    s.titulo AS sesion,
+    s.tipo_sesion,
+    p.nombre AS ponente,
+    ps.rol_ponente
+FROM sesion s
+JOIN edicion e ON s.id_edicion = e.id_edicion
+JOIN ponente_sesion ps ON s.id_sesion = ps.id_sesion
+JOIN ponente po ON ps.id_ponente = po.id_persona_edicion
+JOIN persona_edicion pe ON po.id_persona_edicion = pe.id_persona_edicion
+JOIN persona p ON pe.id_persona = p.id_persona;
+
+-- Verificación B: Total acumulado de patrocinios vigentes por edición
+SELECT 
+    e.nombre AS edicion,
+    COUNT(pt.id_patrocinio) AS total_patrocinadores,
+    SUM(pt.monto) AS monto_total
+FROM edicion e
+LEFT JOIN patrocinio pt ON e.id_edicion = pt.id_edicion AND pt.estado_acuerdo = 'Vigente'
+GROUP BY e.id_edicion, e.nombre;

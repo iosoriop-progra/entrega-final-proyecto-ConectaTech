@@ -1,0 +1,113 @@
+-- 1. SEDES Y SALAS
+INSERT INTO sede (nombre, ciudad, direccion) VALUES
+('Centro de Convenciones GT', 'Ciudad de Guatemala', 'Zona 10, Calle 15'),
+('Campus Tecnológico Antigua', 'Antigüedad', 'Calle del Arco #22');
+
+INSERT INTO sala (id_sede, nombre, capacidad) VALUES
+(1, 'Auditórium Principal', 150),
+(1, 'Sala de Innovación A', 40),
+(2, 'Laboratorio Tech 1', 25);
+
+-- 2. EDICIONES
+INSERT INTO edicion (nombre, anio, fecha_inicio, fecha_fin, estado_preparacion, modalidad) VALUES
+('ConectaTech 2026 Presencial', 2026, '2026-10-10', '2026-10-12', 'Confirmado', 'Presencial'),
+('ConectaTech 2026 Virtual Summit', 2026, '2026-11-05', '2026-11-06', 'Planificación', 'Virtual');
+
+-- 3. PERSONAS (6 en total)
+INSERT INTO persona (nombre, correo, pais) VALUES
+('Carlos Gómez', 'carlos.gomez@mail.com', 'Guatemala'),
+('Ana Martínez', 'ana.martinez@mail.com', 'México'),
+('Luis Fernández', 'luis.fernandez@mail.com', 'Colombia'),
+('María López', 'maria.lopez@mail.com', 'Costa Rica'),
+('Jorge Ramírez', 'jorge.ramirez@mail.com', 'Guatemala'),
+('Sofia Castro', 'sofia.castro@mail.com', 'El Salvador');
+
+-- 4. PERSONA_EDICION (Roles en Edición)
+-- Asistentes
+INSERT INTO persona_edicion (id_persona, id_edicion, es_asistente, es_ponente) VALUES
+(1, 1, TRUE, FALSE), -- Carlos (Asistente Ed1)
+(2, 1, TRUE, FALSE), -- Ana (Asistente Ed1)
+(3, 1, TRUE, FALSE), -- Luis (Asistente Ed1)
+(4, 2, TRUE, FALSE); -- María (Asistente Ed2)
+
+-- Ponentes
+INSERT INTO persona_edicion (id_persona, id_edicion, es_asistente, es_ponente) VALUES
+(5, 1, FALSE, TRUE), -- Jorge (Ponente Ed1)
+(6, 1, FALSE, TRUE); -- Sofia (Ponente Ed1)
+
+-- Rol Doble (Asistente + Ponente)
+INSERT INTO persona_edicion (id_persona, id_edicion, es_asistente, es_ponente) VALUES
+(3, 2, TRUE, TRUE);  -- Luis (Asistente y Ponente en Ed2)
+
+-- Subtipos Asistente
+INSERT INTO asistente (id_persona_edicion, tipo_acreditacion) VALUES
+(1, 'VIP'),
+(2, 'Estudiante'),
+(3, 'Profesional'),
+(4, 'Estudiante'),
+(7, 'VIP');
+
+-- Subtipos Ponente
+INSERT INTO ponente (id_persona_edicion, biografia) VALUES
+(5, 'Experto en bases de datos con 10 años de experiencia.'),
+(6, 'Especialista en arquitectura cloud y DevOps.'),
+(7, 'Investigador en optimización de consultas SQL.');
+
+-- 5. SESIONES (6 en total)
+-- Charla 1 (Prerrequisito)
+INSERT INTO sesion (id_edicion, id_sala, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion) VALUES
+(1, 1, 'Introducción a PostgreSQL 18', 'Conceptos básicos de PostgreSQL', '2026-10-10', '09:00:00', '10:30:00', 'Charla');
+INSERT INTO charla (id_sesion, minutos_preguntas) VALUES (1, 15);
+
+-- Taller 1 (Depende de Charla 1)
+INSERT INTO sesion (id_edicion, id_sala, id_sesion_prerrequisito, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion) VALUES
+(1, 2, 1, 'Taller Avanzado de PostgreSQL', 'Hands-on con índices y vistas', '2026-10-10', '11:00:00', '13:00:00', 'Taller');
+INSERT INTO taller (id_sesion, cupo_practico, requisitos_materiales) VALUES (2, 20, 'Laptop con Docker instalado');
+
+-- Charla 2
+INSERT INTO sesion (id_edicion, id_sala, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion) VALUES
+(1, 1, 'Docker para Desarrolladores', 'Contenerización rápida de apps', '2026-10-11', '10:00:00', '11:30:00', 'Charla');
+INSERT INTO charla (id_sesion, minutos_preguntas) VALUES (3, 20);
+
+-- Taller 2
+INSERT INTO sesion (id_edicion, id_sala, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion) VALUES
+(1, 3, 'Modelado ER en Mermaid', 'Diseño ágil de esquemas de datos', '2026-10-11', '14:00:00', '16:00:00', 'Taller');
+INSERT INTO taller (id_sesion, cupo_practico, requisitos_materiales) VALUES (4, 15, 'Navegador web');
+
+-- Sesión Virtual 1
+INSERT INTO sesion (id_edicion, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion, url_transmision) VALUES
+(2, 'Keynote: Futuro de las Bases de Datos', 'Tendencias globales en datos', '2026-11-05', '09:00:00', '10:00:00', 'Charla', 'https://conectatech.org/live/keynote');
+INSERT INTO charla (id_sesion, minutos_preguntas) VALUES (5, 10);
+
+-- Sesión Virtual 2
+INSERT INTO sesion (id_edicion, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion, url_transmision) VALUES
+(2, 'Masterclass SQL Tuning', 'Optimización de consultas complejas', '2026-11-05', '10:30:00', '12:00:00', 'Taller', 'https://conectatech.org/live/tuning');
+INSERT INTO taller (id_sesion, cupo_practico, requisitos_materiales) VALUES (6, 50, 'Conexión a internet');
+
+-- 6. INSCRIPCIONES A SESIONES (8 en total)
+INSERT INTO inscripcion_sesion (id_asistente, id_sesion, estado) VALUES
+(1, 1, 'Confirmada'),
+(1, 2, 'Confirmada'),
+(2, 1, 'Confirmada'),
+(2, 3, 'Confirmada'),
+(3, 3, 'Confirmada'),
+(3, 4, 'Confirmada'),
+(4, 5, 'Confirmada'),
+(7, 6, 'Confirmada');
+
+-- 7. ASIGNACIÓN DE PONENTES (4 en total)
+INSERT INTO ponente_sesion (id_ponente, id_sesion, rol_ponente, orden_presentacion) VALUES
+(5, 1, 'Principal', 1),
+(5, 2, 'Principal', 1),
+(6, 3, 'Principal', 1),
+(7, 6, 'Principal', 1);
+
+-- 8. EMPRESAS Y PATROCINIOS (3 en total)
+INSERT INTO empresa (nombre, identificacion_fiscal) VALUES
+('TechCorp SA', 'CF-1234567-8'),
+('CloudSolutions Ltd', 'CF-9876543-2');
+
+INSERT INTO patrocinio (id_empresa, id_edicion, categoria, monto, fecha_confirmacion, estado_acuerdo) VALUES
+(1, 1, 'Platinum', 5000.00, '2026-08-01', 'Vigente'),
+(2, 1, 'Gold', 2500.00, '2026-08-15', 'Vigente'),
+(1, 2, 'Platinum', 4000.00, '2026-09-01', 'Vigente');

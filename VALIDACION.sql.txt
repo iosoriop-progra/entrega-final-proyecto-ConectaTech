@@ -1,0 +1,10 @@
+-- Prueba 1: Intento de registrar un patrocinio vigente duplicado (Debe fallar por el INDEX UNIQUE)
+INSERT INTO patrocinio (id_empresa, id_edicion, categoria, monto, fecha_confirmacion, estado_acuerdo) 
+VALUES (1, 1, 'Gold', 3000.00, '2026-09-02', 'Vigente');
+
+-- Prueba 2: Intento de crear una sesión con hora de fin menor a la de inicio (Debe fallar por el CHECK)
+INSERT INTO sesion (id_edicion, titulo, resumen, fecha, hora_inicio, hora_fin, tipo_sesion) 
+VALUES (1, 'Sesión Inválida', 'Prueba', '2026-10-10', '14:00:00', '13:00:00', 'Charla');
+
+-- Prueba 3: Intento de autoreferenciar una sesión como su propio prerrequisito (Debe fallar por el CHECK)
+UPDATE sesion SET id_sesion_prerrequisito = 1 WHERE id_sesion = 1;
